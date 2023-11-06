@@ -1,0 +1,4 @@
+.custom-hover:hover {
+  color: #7bed9f;
+  transition: 500ms ease;
+}
