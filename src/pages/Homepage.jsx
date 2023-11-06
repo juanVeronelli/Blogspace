@@ -13,8 +13,6 @@ const Homepage = () => {
     const { loading, user } = useContext(AuthContext);
     const [text, setText] = useState('');
     const [textareaHeight, setTextareaHeight] = useState('90px');
-    const navigate = useNavigate();
-
     
     const handleTextChange = (e) => {
         setText(e.target.value);
@@ -26,13 +24,11 @@ const Homepage = () => {
         }
       };
     
-      if(loading){
-        return(<><h1>Loading...</h1></>)
-      }
-
+    if(loading) return(<><h1>Loading...</h1></>) 
+      
     return (
         <div className="grid grid-cols-5 h-screen">
-            <NavAside user={user}/>
+            <NavAside/>
             <div className="col-span-3 w-full">
                     <div className="col-span-9 mx-auto text-center justify-center w-full">
                         <div className="mt-5 flex h-20 w-full mx-auto ">

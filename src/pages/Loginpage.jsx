@@ -40,7 +40,7 @@ const Login = () => {
               Cookies.set("auth", response.data.token);
               navigate('/home'); //Redirect
             })
-            .catch((error) =>{ setResponse({ error: true, succes: false, message: error.response.data.message})});
+            .catch((error) =>{ setResponse({error: true, success: false, message: error.response.data.message})});
         } catch(err){
           console.log(err);
         }

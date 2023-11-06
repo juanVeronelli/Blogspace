@@ -21,7 +21,6 @@ async function connectToDatabase() {
       console.error('Error al conectar a la base de datos:', err);
       return;
     }
-    console.log('Conexión a la base de datos exitosa');
   });
 
   // Devuelve la conexión para que puedas utilizarla

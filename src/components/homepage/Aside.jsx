@@ -2,7 +2,7 @@
 const Aside = ({ user }) => {
     return (
         <div className="col-span-1 p-4 border-l ">
-            <div className="grid grid-rows-2 w-3/4 h-2/4 mt-5 fixed">
+            <div className="grid grid-rows-2 w-3/4 h-2/4 mt-5 -ml-5 fixed">
                 {/* Filas en la columna derecha */}
                 <div className="row-span-1 h-56 w-1/5 rounded-lg ml-10 text-center" style={{backgroundColor: "#f5f6fa"}}>
                     <h3 className="font-bold mt-3"> personal information </h3>

@@ -7,14 +7,16 @@ export const renewToken = (user) => {
 }
 
 export const authenticate = (req, res, next) => {
-    const token = req.header('x-access-token');
-
-    if(!token) return res.status(401).send({ message: 'Token no proporcionado' });
-    try{
-        const decoded = jwt.verify(token, process.env.SECRET);
-        req.user = decoded;
-        next();
-    } catch(err){
-        return res.status(401).send({ message: 'Token no válido' });
+    const token = req.header('x-access-token')
+    if(!token) {
+        return res.status(401).send({ message: 'Token no proporcionado' });
+    } else {
+        try{
+            const decoded = jwt.verify(token, process.env.SECRET);
+            req.user = decoded;
+            next();
+        } catch(err){
+            console.log(err)
+        }
     }
 }

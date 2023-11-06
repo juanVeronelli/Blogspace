@@ -1,8 +1,5 @@
 import jwt from 'jsonwebtoken';
-import cookie from 'js-cookie';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const tokenBlackList = new Set();
 
 //database
 import connectToDatabase from '../database/connect.js'
@@ -38,13 +35,30 @@ const user = {
               });
             });
           };
-      
+
+          const checkUsernameSql = 'SELECT COUNT(*) AS count FROM users WHERE username = ?'
+          const checkUsername = (username) => {
+            return new Promise((resolve, reject)=>{
+              connection.query(checkUsernameSql, [username], (err, result)=>{
+                if (err) return reject(err);
+                const usernameCount = result[0].count;
+                resolve(usernameCount > 0);
+              })
+            })
+          }
+          
+          //check if username already exists
+          const usernameExists = await checkUsername(username);
           // Check if the email already exists
           const emailExists = await checkEmail(email);
       
-          if (emailExists) {
-            // Send a response if the email already exists
-            res.status(409).send({ error: true, message: "The email provided is already associated with an existing account." });
+          if (emailExists || usernameExists) {
+            let errorMessage = "An account with this ";
+            if (emailExists) errorMessage += "email";
+            if (emailExists && usernameExists) errorMessage += " and ";
+            if (usernameExists) errorMessage += "username";
+            errorMessage += " already exists.";
+            res.status(409).send({ error: true, message: errorMessage });
           } else {
             // Create a new user registration
             const newRegister = { email, password, username, thumbnail };
@@ -76,6 +90,7 @@ const user = {
       const connection = await connectToDatabase();
       try{
         const { email, password } = req.body;
+        console.lo
         const sqlGetUser = 'SELECT * FROM users WHERE email = ?';
 
         // Function to get user by email and get the password
@@ -111,6 +126,7 @@ const user = {
       //verify token
       const token = req.header('x-access-token');
       if(!token) return res.status(200).send({state: false, user: null});
+      if(tokenBlackList.has(token)) return res.status(200).send({state: false, user: null});
       
       try{
         const current = Math.floor(Date.now() / 1000);
@@ -130,10 +146,12 @@ const user = {
             res.status(200).send({state: true, user: result[0]});
           })
         }catch(err){
+          connection.end();
           res.status(401).send({ message: "Internal Error"})
         }
       } catch(err){
           console.log(err)
+          connection.end();
           res.status(200).send({ status: false, user: null});
       }
     },
@@ -143,12 +161,63 @@ const user = {
       try{
         const sqlGetUser = 'SELECT * FROM users WHERE username = ?';
         connection.query(sqlGetUser, [username], (err, result) => {
-          if(err) result.status(401).send({error: true, user:null, message: "Error in DB"});
-          res.status(200).send({error: false, user: result[0], message: "Success"});
+          if(err) {
+            connection.end();
+            result.status(401).send({error: true, user:null, message: "Error in DB"});
+          }
+          if(result.length === 0) {
+            connection.end();
+            res.status(200).send({ error: true, user:null, message: "User not found"});
+          } else {
+            connection.end();
+            res.status(200).send({error: false, user: result[0], message: "Success"});
+          }
         })
       } catch(err){
         console.log(err)
+        connection.end();
       }
+    },
+    logOut: async (req, res) => {
+      const token = req.header('x-access-token');
+      tokenBlackList.add(token);
+      res.status(200).send({ error: false, message: "Logout succesfully"});
+    },
+    update: async (req, res) => {
+      const username = req.params.username;
+      const connection = await connectToDatabase();
+      try{
+        const sqlOriginal = 'SELECT * FROM users WHERE username = ?'
+        const getOriginalUser = (username) => {
+          return new Promise((resolve, reject) => {
+            connection.query(sqlOriginal, [username], (err, result) => {
+              if(err) return reject(err);
+              const userOriginal = result[0];
+              resolve(userOriginal);
+            })
+          })
+        }
+        const originalUser = await getOriginalUser(username);
+        //validations
+        const email = (req.body.email !== null && req.body.email !== '') ? req.body.email : originalUser.email;
+        const password = (req.body.password !== null && req.body.password !== '') ? await passwordsCrypt.encrypt(req.body.password) : originalUser.password;
+        const thumbnail = (req.body.imageInput !== null && req.body.imageInput !== '') ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : originalUser.thumbnail;
+
+        const sqlPatch = 'UPDATE users SET email = ?, password = ?, thumbnail = ? WHERE username = ?'
+        connection.query(sqlPatch, [email, password, thumbnail, username], (err, result)=>{
+          if(err){            
+            connection.end();
+            result.status(401).send({error: true, user:null, message: "Error in DB"});
+          } else {
+            connection.end();
+            res.status(200).send({error: false, user: result[0], message: "Update succesffuly"});
+          }
+        })
+        
+      }catch(err){
+        console.log(err)
+      }
+      
     }
 }
 

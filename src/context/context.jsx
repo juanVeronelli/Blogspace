@@ -13,25 +13,41 @@ export const AuthProvider = ({ children }) => {
     
     const navigate = useNavigate();
 
-    useEffect(()=>{
-        setLoading(true)
-        const token = Cookies.get("auth");
-        if(!token) return navigate('/login');
-        try{
-            axios.get('http://localhost:3000/auth', {headers:{'x-access-token': token}})
-                .then((response) => {
-                    if(response.data.state){
-                        setUser(response.data.user);
-                    } else {
-                        Cookies.remove("auth");
-                        navigate('/login');
-                    }
-                }).catch((err)=>{ console.log(err)}).finally(()=>{ setLoading(false)});
-        } catch(err) {
-            console.log(err);
-            navigate('/login');
-        }
-    },[]);
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            const token = Cookies.get("auth");
+
+            if (!token) {
+                navigate('/login');
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const response = await axios.get('http://localhost:3000/auth', { headers: { 'x-access-token': token } });
+
+                if (response.data.state) {
+                    setUser(response.data.user);
+                    setLoading(false);
+                } else {
+                    Cookies.remove("auth");
+                    setLoading(false);
+                    navigate('/login');
+                }
+            } catch (error) {
+                console.log(error);
+                navigate('/login');
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [navigate]);
+
+    if (loading) {
+        return <h1>Loading...</h1>;
+    }
 
     return (
         <AuthContext.Provider value={{user, loading}}>

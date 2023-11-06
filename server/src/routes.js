@@ -15,5 +15,9 @@ router.post('/register', user.register);
 router.get('/auth', user.verificate);
 //get profiles
 router.get('/profile/:username', authenticate, user.getProfiles);
+//logout
+router.post('/logout', authenticate, user.logOut);
+//update user
+router.patch('/update/:username', authenticate, upload.single('imageInput'), user.update);
 
 export default router
