@@ -1,88 +1,108 @@
-import React, { useContext, useEffect, useState } from "react";
-import { AuthContext } from "../context/context.jsx";
-import { useNavigate} from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link} from "react-router-dom";
 
 //components
 import NavAside from "../components/homepage/navAside.jsx"; 
+import Aside from "../components/homepage/Aside.jsx";
+//loader
+import Loader from "../components/loader/Loader.jsx";
 
 //icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPaperclip, faPeopleGroup, faGear } from '@fortawesome/free-solid-svg-icons'
+import axios from "axios";
+import Cookies from "js-cookie";
 
 const Homepage = () => {
-    const { loading, user } = useContext(AuthContext);
     const [text, setText] = useState('');
-    const [textareaHeight, setTextareaHeight] = useState('90px');
+    const [textareaHeight, setTextareaHeight] = useState("auto");
+    const [pageFocus, setPageFocus] = useState(true);
+    const [loading, setloading] = useState(true);
+    const [user, setUser] = useState(null);
+
     
+    const token = Cookies.get('auth')
+    const navigate = useNavigate()
+
     const handleTextChange = (e) => {
         setText(e.target.value);
         if(e.target.value == '') {
-            setTextareaHeight('90px');
+            setTextareaHeight('auto');
         } else {
+            const maxHeight = 300; 
             const newHeight = e.target.scrollHeight;
-            setTextareaHeight(`${newHeight}px`);
+            setTextareaHeight(newHeight > maxHeight ? maxHeight + "px" : newHeight + "px");
         }
       };
-    
-    if(loading) return(<><h1>Loading...</h1></>) 
-      
+
+ 
+      useEffect(() => {
+        try{
+            axios.get('http://localhost:3000/users', { headers: {'x-access-token': token} } )
+                .then((response) => setUser( response.data.user) )
+                .catch((error) =>{
+                    if(error.response.status === 401) {
+                        navigate("/login");
+                        Cookies.remove('auth');
+                    } else {
+                        setloading(false);
+                    }
+                })
+                .finally(()=> {setloading(false);})
+        } catch(err){
+            setloading(false);
+            console.log(err);
+        }
+      })
+
+
+    if(loading) return(<Loader/>) 
     return (
-        <div className="grid grid-cols-5 h-screen">
-            <NavAside/>
-            <div className="col-span-3 w-full">
-                    <div className="col-span-9 mx-auto text-center justify-center w-full">
-                        <div className="mt-5 flex h-20 w-full mx-auto ">
-                            <div className="flex items-center w-full mx-auto justify-center p-5">
-                                <div className="rounded-lg p-5 w-full">
-                                    <div className="flex w-full border rounded-full">
-                                        <div className="flex w-10 items-center justify-center rounded-tl-lg rounded-bl-lg border-r p-5">
-                                            <svg viewBox="0 0 20 20" aria-hidden="true" className="pointer-events-none absolute w-5 fill-gray-500 transition">
-                                                <path d="M16.72 17.78a.75.75 0 1 0 1.06-1.06l-1.06 1.06ZM9 14.5A5.5 5.5 0 0 1 3.5 9H2a7 7 0 0 0 7 7v-1.5ZM3.5 9A5.5 5.5 0 0 1 9 3.5V2a7 7 0 0 0-7 7h1.5ZM9 3.5A5.5 5.5 0 0 1 14.5 9H16a7 7 0 0 0-7-7v1.5Zm3.89 10.45 3.83 3.83 1.06-1.06-3.83-3.83-1.06 1.06ZM14.5 9a5.48 5.48 0 0 1-1.61 3.89l1.06 1.06A6.98 6.98 0 0 0 16 9h-1.5Zm-1.61 3.89A5.48 5.48 0 0 1 9 14.5V16a6.98 6.98 0 0 0 4.95-2.05l-1.06-1.06Z"></path>
-                                            </svg>
-                                        </div>
-                                        <input type="text" className="w-full pl-2 text-base font-semibold outline-0" placeholder="Searh people in blogspace" id=""></input>
-                                        <input type="button" value="Search" className="bg-custom-color cursor-pointer p-2 rounded-full rounded-full text-white font-semibold hover:bg-green-500 transition-colors" />
-                                    </div> 
-                                </div> 
-                            </div>
-                        </div>
-                        <hr className="mb-5"/>
-                        <div className=" ml-8 h-full flex">
-                            <div className="h-full mt-3 w-24" >
-                                <img src={user.thumbnail} alt="Profile photo" className="rounded-full float-right w-12"/>
-                            </div>
-                            <div className="h-full ml-2 w-full" >
-                                <form action="">
-                                    <textarea placeholder="What progress have you made today?" className="text-2xl w-full p-4 outline-none resize-none" style={{height: textareaHeight}} required value={text} onChange={handleTextChange}/>
-                                    <div className=" h-14">
-                                        <div className="w-full h-14 justify-between flex items-center">
-                                            <div className="ml-5">
-                                                <FontAwesomeIcon className="rounded-full p-2 hover:bg-custom-hover" icon={faPaperclip} style={{ color: "green", fontSize: "20px", cursor:"pointer"}} />
-                                                <FontAwesomeIcon className="ml-2 rounded-full p-2 hover:bg-custom-hover" icon={faPeopleGroup} style={{ color: "green", fontSize: "20px", cursor:"pointer"}} />
-                                                <FontAwesomeIcon className="ml-2 rounded-full p-2 hover:bg-custom-hover" icon={faGear} style={{ color: "green", fontSize: "20px", cursor:"pointer"}} />
-                                            </div>
-                                            <button type="submit" className="rounded-full w-28 h-9 mr-5 text-white font-bold bg-custom-color hover:bg-green-500"> POST </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                        <hr className="mt-5 mb-5"/>
-                        
-                        <div className="w-5/6 h-96 mx-auto"></div>
-                        <hr className="mt-5 mb-5"/>
-
-                        <div className="w-5/6 h-96 mx-auto"></div>
-                        <hr className="mt-5 mb-5"/>
-
-                        <div className="w-5/6 h-96  mx-auto"></div>
-                        <hr className="mt-5 mb-5"/>
-
-
-                    </div>
+      <div className="grid grid-cols-4 h-screen">
+        <NavAside user={user} loading={loading} />
+        <div className="col-span-2 w-full h-[100vh]">
+          <div className="w-full h-[8vh] flex justify-center items-end border-b">
+            <div className="w-[70%] h-[5vh] flex justify-evenly items-end">
+              <div className={`w-[30%] h-full flex justify-center items-center cursor-pointer ${ pageFocus ? "border-b-8 border-green-500" : "hover:border-b-8 hover:border-green-500" }`} onClick={() => setPageFocus(true)}  >
+                <h2 className={pageFocus ? "font-bold text-xl": "font-bold text-xl text-gray-300"}>All</h2>
+              </div>
+              <div  className={`w-[30%] h-full flex justify-center items-center cursor-pointer ${pageFocus ? "hover:border-b-8 hover:border-green-500" : "border-b-8 border-green-500"}`}onClick={() => setPageFocus(false)}>
+                <h2 className={pageFocus ? "font-bold text-xl text-gray-300" : "font-bold text-xl"}> Favorites </h2>
+              </div>
             </div>
-            <div className="h-full w-full border-l"></div>
+          </div>
+          <form className="w-full h-auto mt-5 p-4 border-b">
+            <div className="w-full h-auto flex">
+                <div className="w-[15%] h-full flex justify-end">
+                    <img src={user.thumbnail} alt="user profile picture" className="w-14 h-14 mr-1 rounded-full" />
+                </div>
+                <div className="w-[85%] h-full">
+                    <textarea className="resize-none w-full outline-none p-2" placeholder="What progress have you made today?" onChange={handleTextChange} value={text} style={{height: textareaHeight}}/>
+                </div>
+            </div>
+            <div className="w-full h-[20%] flex">
+                <div className="w-[16%] h-full"></div>
+                <div className="w-[85%] h-full mt-2 flex justify-between">
+                    <div className="w-[15%] h-full flex">
+                        <div className="w-[33%] flex items-center justify-center h-full">
+                            <FontAwesomeIcon icon={faPaperclip} color="green" fontSize={"20"} className=" rounded-full p-2 hover:bg-gray-200" />
+                        </div>
+                        <div className="w-[33%] flex items-center h-full">
+                            <FontAwesomeIcon icon={faPeopleGroup} color="green" fontSize={"20"} className=" rounded-full p-2 hover:bg-gray-200" />
+                        </div>
+                        <div className="w-[33%] flex items-center h-full">
+                            <FontAwesomeIcon icon={faGear} color="green" fontSize={"20"} className=" rounded-full p-2 ml-1 hover:bg-gray-200" />
+                        </div>
+                    </div>
+                    <div className="w-[25%] h-full flex items-center justify-end">
+                        <button type="submit" className=" w-28 h-8 bg-custom-color hover:bg-green-400 font-bold text-white uppercase rounded-full"> Post </button>
+                    </div>
+                </div>
+            </div>
+          </form>
         </div>
+        <Aside user={user}/>
+      </div>
     );
 };
 

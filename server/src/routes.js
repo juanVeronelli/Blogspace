@@ -11,10 +11,13 @@ import user from '../controllers/users.js'
 router.post('/login', user.login);
 //register user route
 router.post('/register', user.register);
-//verify token
-router.get('/auth', user.verificate);
+
+//get users
+router.get('/users', authenticate, user.getUsers);
 //get profiles
 router.get('/profile/:username', authenticate, user.getProfiles);
+//get porfiles search
+router.get('/search/:term', authenticate, user.getSearchUsers)
 //logout
 router.post('/logout', authenticate, user.logOut);
 //update user

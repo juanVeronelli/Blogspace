@@ -90,7 +90,6 @@ const user = {
       const connection = await connectToDatabase();
       try{
         const { email, password } = req.body;
-        console.lo
         const sqlGetUser = 'SELECT * FROM users WHERE email = ?';
 
         // Function to get user by email and get the password
@@ -120,39 +119,6 @@ const user = {
         //close connection
         connection.end();
         console.log("ERR:" + err);
-      }
-    },
-    verificate: async (req, res) => {
-      //verify token
-      const token = req.header('x-access-token');
-      if(!token) return res.status(200).send({state: false, user: null});
-      if(tokenBlackList.has(token)) return res.status(200).send({state: false, user: null});
-      
-      try{
-        const current = Math.floor(Date.now() / 1000);
-        
-        //decoded token and verify expiration
-        const decoded = jwt.verify(token, process.env.SECRET);
-        if(decoded.exp && decoded.exp < current) return res.staus(200).send({state: false, user: null});
-        
-        // Connect to the database
-        const connection = await connectToDatabase();
-        try{
-          const sql = 'SELECT email, username, followers, following, thumbnail FROM users WHERE id = ?'
-          connection.query(sql, [decoded.id], (err, result) => {
-            if(err) throw err;
-            
-            connection.end();
-            res.status(200).send({state: true, user: result[0]});
-          })
-        }catch(err){
-          connection.end();
-          res.status(401).send({ message: "Internal Error"})
-        }
-      } catch(err){
-          console.log(err)
-          connection.end();
-          res.status(200).send({ status: false, user: null});
       }
     },
     getProfiles: async (req,res) => {
@@ -218,6 +184,42 @@ const user = {
         console.log(err)
       }
       
+    },
+    getUsers: async (req, res) => {
+      // Connect to the database
+      const connection = await connectToDatabase();
+      try{
+        const id = req.user.id;
+        const sql = "SELECT * FROM users WHERE id = ?";
+        connection.query(sql, [id], (err, result) => {
+          if(err) res.status(500).send({message: "Internal Server Error"});
+          else {
+            connection.end();
+            res.status(200).send({ user: result[0]});
+          }
+          });
+      }catch(err){
+        connection.end();
+        console.log(err)
+      }
+    },
+    getSearchUsers: async (req, res) => {
+      const param = req.params.term;
+      const connection = await connectToDatabase();
+      try{
+        const sql = "SELECT * FROM users WHERE username LIKE ?";
+        connection.query(sql, [`%${param}%`], (err, result) => {
+          if(err)  res.status(500).send({message: "Internal Server Error"});
+          else {
+            connection.end();
+            const usernames = result.map((row) => row);
+            res.status(200).send({ usernames: usernames});
+          }
+        })
+      } catch(err){
+        connection.end();
+        console.log(err)
+      }
     }
 }
 
